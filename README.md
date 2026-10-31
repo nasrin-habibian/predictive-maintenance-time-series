@@ -166,7 +166,29 @@ predictive-maintenance-time-series/
 ## Reproducibility
 
 The random seed and modelling parameters are defined in `src/config.py`. Generated artifacts are excluded from Git by default; you can commit selected report images if you want to display results on your GitHub repository.
+## Continuous integration
 
+Every push and pull request to `main` runs the unit tests automatically with GitHub Actions on Python 3.10, 3.11 and 3.12 (see `.github/workflows/ci.yml`).
+
+## Path to production (planned, not implemented)
+
+This repository covers training, evaluation and batch prediction. The steps below describe how I would extend it for an operational setting. They are a plan, not part of the current code.
+
+**Deployment**
+- Package the training and prediction code in a Docker image so the environment is identical everywhere.
+- Run batch scoring on a schedule (for example, as a scheduled container job on AWS) and write predictions to storage that downstream tools can read.
+- Store each trained model together with `model_metadata.json` (features, RUL cap, training date), so every prediction can be traced to a model version.
+
+**Monitoring**
+- Track input drift by comparing the distribution of each sensor feature in new data against the training data.
+- Track prediction quality: once true failure times become known, compare them with predicted RUL and monitor MAE and RMSE over time.
+- Track data quality: missing sensors, out-of-range values and sudden changes in sampling.
+- Alert on all three, and keep the anomaly score as a separate, human-reviewed signal rather than an automatic decision.
+
+**Retraining and governance**
+- Retrain on a schedule, or when drift or error thresholds are crossed, and promote a new model only if it beats the current one on a held-out set.
+- Keep a human in the loop for any maintenance decision, with predictions treated as decision support.
+- Validate on representative fleet data before any real use, since C-MAPSS is simulated benchmark data.
 ## Limitations and next steps
 
 - FD001 is simulated benchmark data with one operating condition and one fault mode.
